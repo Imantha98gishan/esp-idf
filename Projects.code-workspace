@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"name": "Medibox",
+			"path": "../Medibox"
+		},
+		{
+			"name": "RoboticHand",
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"dht.h": "c",
+			"gpio.h": "c",
+			"stdio.h": "c"
+		}
+	}
+}
