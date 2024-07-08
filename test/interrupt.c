@@ -33,6 +33,7 @@ static void IRAM_ATTR gpio_isr_handler(void *arg)
     xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);  
 }
 
+
 void app_main(void)
 {
     // zero-initialize the config structure.
