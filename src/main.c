@@ -17,37 +17,20 @@
 #define ESP_INTR_FLAG_DEFAULT 0
 
 static QueueHandle_t gpio_evt_queue = NULL;
-int toggle=0;
+uint32_t toggle=0;
 // IRAM_ATTR
 static void IRAM_ATTR gpio_isr_handler(void *arg)
 {
     uint32_t gpio_num = (uint32_t)arg;
+    toggle^=1;
+    gpio_set_level(GPIO_OUTPUT_IO_0,toggle);  
+    gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     /*queues are used to passed data from interrupt to task
     if the gpio_evt_queue task leave the blocked state and
     pirority is higher than the current running task
     &xHigherPriorityTaskWoken set to pdTrue inside the xQueueSendFromISR
     this will allow user to use the ISR in safe manner*/
-    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
-}
-
-static void gpio_task_example(void *arg)
-{
-    uint32_t io_num;
-    for (;;)
-    {
-        /*
-        Receives an item from a queue and removed from the queue
-        gpio_evt_queue is the handle of the queue,&io_num is pointer to the memory
-        into which recevied data will be copied.
-        The maximum amount of time the task should remain the blocked state to wait
-        for data to available on the queue.
-        */
-        if (xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY))
-        {   
-            toggle^=1;
-            gpio_set_level(GPIO_PIN0_REG,toggle);
-        }
-    }
+    xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);  
 }
 
 void app_main(void)
@@ -66,6 +49,7 @@ void app_main(void)
     io_conf.pull_up_en = 0;
     // configure GPIO with the given settings
     gpio_config(&io_conf);
+    gpio_set_level(GPIO_OUTPUT_IO_0,0);
 
     // interrupt of rising edge
     io_conf.intr_type = GPIO_INTR_POSEDGE;
@@ -77,21 +61,12 @@ void app_main(void)
     io_conf.pull_up_en = 1;
     gpio_config(&io_conf);
 
-    // change gpio interrupt type for one pin
-    gpio_set_intr_type(GPIO_INPUT_IO_1, GPIO_INTR_ANYEDGE);
-
     // create a queue to handle gpio event from isr
     gpio_evt_queue = xQueueCreate(10, sizeof(uint32_t));
-    // start gpio task
-    xTaskCreate(gpio_task_example, "gpio_task_example", 2048, NULL, 10, NULL);
-
     // install gpio isr service
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);
     // hook isr handler for specific gpio pin
     gpio_isr_handler_add(GPIO_INPUT_IO_1, gpio_isr_handler, (void *)GPIO_INPUT_IO_1);
 
-    while (1)
-    {
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
-    }
+    while (1);
 }
